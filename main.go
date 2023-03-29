@@ -14,13 +14,25 @@ func init() {
 func main() {
 
 	window := initGlfw()
+	defer glfw.Terminate()
+	program := initOpenGL()
 
 	for !window.ShouldClose() {
 
-		window.SwapBuffers()
-		glfw.PollEvents()
+		draw(window, program)
+
 	}
 
+}
+
+func draw(window *glfw.Window, program uint32) {
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	gl.ClearColor(0.2, 0.3, 0.3, 1.0)
+
+	gl.UseProgram(program)
+
+	glfw.PollEvents()
+	window.SwapBuffers()
 }
 
 func initGlfw() *glfw.Window {
