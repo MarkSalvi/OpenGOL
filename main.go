@@ -13,29 +13,6 @@ func init() {
 
 func main() {
 
-	window := initGlfw()
-	defer glfw.Terminate()
-	program := initOpenGL()
-
-	for !window.ShouldClose() {
-
-		draw(window, program)
-
-	}
-
-}
-
-func draw(window *glfw.Window, program uint32) {
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	gl.ClearColor(0.2, 0.3, 0.3, 1.0)
-
-	gl.UseProgram(program)
-
-	glfw.PollEvents()
-	window.SwapBuffers()
-}
-
-func initGlfw() *glfw.Window {
 	err := glfw.Init()
 	if err != nil {
 		log.Fatal("GLFW INIT ERROR: ", err)
@@ -52,20 +29,31 @@ func initGlfw() *glfw.Window {
 	}
 
 	window.MakeContextCurrent()
-	return window
-}
 
-func initOpenGL() uint32 {
-
-	err := gl.Init()
-	if err != nil {
-		log.Fatal("OPENGL INIT ERROR: ", err)
+	err1 := gl.Init()
+	if err1 != nil {
+		log.Fatal("OPENGL INIT ERROR: ", err1)
 	}
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	log.Println("OpenGL version", version)
 
 	prog := gl.CreateProgram()
 	gl.LinkProgram(prog)
-	return prog
 
+	for !window.ShouldClose() {
+
+		draw(window, prog)
+
+	}
+
+}
+
+func draw(window *glfw.Window, program uint32) {
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	gl.ClearColor(0.2, 0.3, 0.3, 1.0)
+
+	gl.UseProgram(program)
+
+	glfw.PollEvents()
+	window.SwapBuffers()
 }
