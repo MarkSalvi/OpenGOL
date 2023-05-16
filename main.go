@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
+	"image"
 	"log"
 	"math"
+	"os"
 	"runtime"
 	"strings"
+	"image/jpeg"
 )
 
 const (
@@ -33,6 +36,9 @@ func init() {
 	runtime.LockOSThread()
 }
 
+type TextureID uint32
+
+
 func main() {
 
 	var triangle = []float32{
@@ -45,6 +51,23 @@ func main() {
 	var indices = []uint32{
 		0, 1, 3,
 		1, 2, 3,
+	}
+
+	var trCoord = []float32{
+		0.0, 0.0,  // lower-left corner
+		1.0, 0.0,  // lower-right corner
+		0.5, 1.0   // top-center corner
+	}
+
+	f, err := os.Open("inputimage.jpg")
+	if err != nil {
+		log.Fatal("No Such Image File Found")
+	}
+	defer f.Close()
+
+	img, fmtName, err := image.Decode(f)
+	if err != nil {
+		// Handle error
 	}
 
 	err := glfw.Init()
@@ -174,4 +197,55 @@ func processInput(window *glfw.Window) {
 	} else if window.GetKey(glfw.KeyF2) == glfw.Press {
 		gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 	}
+}
+
+func GenTexture() TextureID{
+	var texID uint32
+	gl.GenTextures(1,&texID)
+	gl.BindTexture(gl.TEXTURE_2D,texID)
+
+	return TextureID(texID)
+}
+
+//Todo: std_image faster way
+func LoadTextureAlpha(filename string) TextureID {
+
+	infile, err := os.Open(filename)
+	if err != nil {
+		panic(err)
+	}
+	defer infile.Close()
+
+	img, err := jpeg.Decode(infile)
+	if err != nil {
+		panic(err)
+	}
+
+	w := img.Bounds().Max.X
+	h := img.Bounds().Max.Y
+
+	pixels := make([]byte, w*h*4)
+	bIndex := 0
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			r, g, b, a := img.At(x, y).RGBA()
+			pixels[bIndex] = byte(r / 256)
+			bIndex++
+			pixels[bIndex] = byte(g / 256)
+			bIndex++
+			pixels[bIndex] = byte(b / 256)
+			bIndex++
+			pixels[bIndex] = byte(a / 256)
+			bIndex++
+		}
+	}
+	texture := GenTexture()
+	gl.TexParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT)
+	gl.TexParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT)
+	gl.TexParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR)
+	gl.TexImage2D(gl.TEXTURE_2D,0,gl.RGBA,int32(w),int32(h),0,gl.RGBA,gl.UNSIGNED_BYTE,gl.Ptr(pixels))
+	gl.GenerateMipmap(gl.TEXTURE_2D)
+	return texture
+
 }
